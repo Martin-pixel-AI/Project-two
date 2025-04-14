@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: truespace
+    env: node
+    buildCommand: cd truespace && npm install && npm run build
+    startCommand: cd truespace && npm start
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production 

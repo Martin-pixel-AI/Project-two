@@ -14,6 +14,14 @@ const nextConfig = {
     // !! WARN !!
     ignoreBuildErrors: true,
   },
+  // Set server port
+  experimental: {
+    serverComponentsExternalPackages: [],
+  },
+  // Настройка порта сервера
+  serverOptions: {
+    port: 10000,
+  },
 };
 
 export default nextConfig; 
