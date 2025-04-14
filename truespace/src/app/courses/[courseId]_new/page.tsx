@@ -40,7 +40,7 @@ interface VideoProgress {
   completed: boolean;
 }
 
-export default function CourseDetails({ params }: { params: { id: string } }) {
+export default function CourseDetails({ params }: { params: { courseId: string } }) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [course, setCourse] = useState<Course | null>(null);
@@ -51,14 +51,14 @@ export default function CourseDetails({ params }: { params: { id: string } }) {
   useEffect(() => {
     const fetchCourse = async () => {
       try {
-        const res = await fetch(`/api/courses/${params.id}`);
+        const res = await fetch(`/api/courses/${params.courseId}`);
         if (res.ok) {
           const data = await res.json();
           setCourse(data);
           
           // Check if user has access to this course
           if (session?.user) {
-            const accessRes = await fetch(`/api/user/courses/check-access?courseId=${params.id}`);
+            const accessRes = await fetch(`/api/user/courses/check-access?courseId=${params.courseId}`);
             if (accessRes.ok) {
               const accessData = await accessRes.json();
               setHasAccess(accessData.hasAccess);
@@ -66,7 +66,7 @@ export default function CourseDetails({ params }: { params: { id: string } }) {
             
             // Fetch progress for all videos
             await Promise.all(data.videos.map(async (video: Video) => {
-              const progressRes = await fetch(`/api/user/videos/progress?videoId=${video._id}&courseId=${params.id}`);
+              const progressRes = await fetch(`/api/user/videos/progress?videoId=${video._id}&courseId=${params.courseId}`);
               if (progressRes.ok) {
                 const progressData = await progressRes.json();
                 setVideoProgress(prev => ({
@@ -87,16 +87,16 @@ export default function CourseDetails({ params }: { params: { id: string } }) {
     if (status !== 'loading') {
       fetchCourse();
     }
-  }, [params.id, session, status]);
+  }, [params.courseId, session, status]);
 
   const handlePurchase = async () => {
     if (!session) {
-      router.push('/auth/signin?callbackUrl=' + encodeURIComponent(`/courses/${params.id}`));
+      router.push('/auth/signin?callbackUrl=' + encodeURIComponent(`/courses/${params.courseId}`));
       return;
     }
     
     // Redirect to checkout or handle purchase logic
-    router.push(`/checkout?courseId=${params.id}`);
+    router.push(`/checkout?courseId=${params.courseId}`);
   };
 
   if (loading) {
@@ -221,7 +221,7 @@ export default function CourseDetails({ params }: { params: { id: string } }) {
                     <CardFooter className="p-4 flex items-center justify-center">
                       {hasAccess || video.isFree ? (
                         <Button asChild variant="outline" size="sm" className="w-full md:w-auto">
-                          <Link href={`/courses/${params.id}/videos/${video._id}`}>
+                          <Link href={`/courses/${params.courseId}/videos/${video._id}`}>
                             <Play size={16} className="mr-2" /> Watch
                           </Link>
                         </Button>

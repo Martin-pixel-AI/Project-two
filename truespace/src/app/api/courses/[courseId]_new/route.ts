@@ -9,10 +9,10 @@ import mongoose from 'mongoose';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { courseId: string } }
 ) {
   try {
-    const courseId = params.id;
+    const courseId = params.courseId;
     
     if (!courseId) {
       return NextResponse.json(

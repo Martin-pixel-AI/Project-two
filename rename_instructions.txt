@@ -1,0 +1,48 @@
+# Инструкции по устранению конфликтов маршрутизации Next.js
+
+Проблема в вашем проекте связана с использованием разных имен параметров (`id` и `courseId`) для одних и тех же динамических маршрутов. Next.js требует единообразия в именовании.
+
+## Уже исправлено:
+
+1. В файле `truespace/src/app/api/courses/[id]/route.ts` изменены:
+   - Тип параметра с `{ params: { id: string } }` на `{ params: { courseId: string } }`
+   - Доступ к параметру с `params.id` на `params.courseId`
+
+2. В файле `truespace/src/app/courses/[id]/page.tsx` изменены:
+   - Тип параметра с `{ params: { id: string } }` на `{ params: { courseId: string } }`
+   - Все обращения с `params.id` на `params.courseId`
+
+## Необходимо выполнить:
+
+1. Переименовать директории в вашем репозитории:
+```
+mv truespace/src/app/api/courses/[id] truespace/src/app/api/courses/[courseId]_new
+mv truespace/src/app/courses/[id] truespace/src/app/courses/[courseId]_new
+```
+
+2. После переименования, удалить старые директории и переименовать новые:
+```
+rm -rf truespace/src/app/api/courses/[id]
+rm -rf truespace/src/app/courses/[id]
+mv truespace/src/app/api/courses/[courseId]_new truespace/src/app/api/courses/[courseId]
+mv truespace/src/app/courses/[courseId]_new truespace/src/app/courses/[courseId]
+```
+
+3. Обновить код в файлах, где есть ссылки на эти маршруты:
+   - Замените все `/courses/[id]` на `/courses/[courseId]`
+   - Замените все `/api/courses/[id]` на `/api/courses/[courseId]`
+
+4. Выполнить сборку проекта локально для проверки:
+```
+cd truespace
+npm run build
+```
+
+5. Если сборка проходит без ошибок, отправьте изменения на GitHub:
+```
+git add .
+git commit -m "Fix route parameter naming consistency"
+git push
+```
+
+После этих изменений ошибка Next.js "You cannot use different slug names for the same dynamic path" должна быть устранена. 
