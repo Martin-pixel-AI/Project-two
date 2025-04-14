@@ -46,23 +46,23 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-20 flex items-center justify-center bg-[#121212]">
+    <div className="min-h-screen pt-28 pb-20 flex items-center justify-center bg-white">
       <motion.div 
-        className="w-full max-w-md p-8 bg-[#1c1c1c] rounded-lg shadow-lg border border-[#333333]"
+        className="w-full max-w-md p-8 bg-white rounded-lg shadow-md border border-gray-200"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.3 }}
       >
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Sign In</h1>
-          <p className="text-gray-400">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Sign In</h1>
+          <p className="text-gray-600">
             Welcome back to TrueSpace
           </p>
         </div>
         
         {error && (
           <motion.div 
-            className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-md flex items-center text-red-400"
+            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md flex items-center text-red-600"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -74,7 +74,7 @@ export default function SignIn() {
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Email
             </label>
             <div className="relative">
@@ -89,14 +89,14 @@ export default function SignIn() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 px-4 py-3 bg-[#252525] border border-[#333333] focus:border-purple-500 rounded-md focus:outline-none text-white"
+                className="block w-full pl-10 px-4 py-3 bg-white border border-gray-300 focus:border-primary focus:ring-primary rounded-md focus:outline-none text-gray-900"
                 placeholder="you@example.com"
               />
             </div>
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
             <div className="relative">
@@ -111,7 +111,7 @@ export default function SignIn() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 px-4 py-3 bg-[#252525] border border-[#333333] focus:border-purple-500 rounded-md focus:outline-none text-white"
+                className="block w-full pl-10 px-4 py-3 bg-white border border-gray-300 focus:border-primary focus:ring-primary rounded-md focus:outline-none text-gray-900"
                 placeholder="••••••••"
               />
             </div>
@@ -123,15 +123,15 @@ export default function SignIn() {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 bg-[#252525] border-[#333333] focus:ring-purple-500 rounded text-purple-600"
+                className="h-4 w-4 border-gray-300 rounded text-primary focus:ring-primary"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-400">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600">
                 Remember me
               </label>
             </div>
             
             <div className="text-sm">
-              <Link href="/auth/forgot-password" className="text-purple-400 hover:text-purple-300">
+              <Link href="/auth/forgot-password" className="text-primary hover:text-primary-dark">
                 Forgot your password?
               </Link>
             </div>
@@ -141,7 +141,7 @@ export default function SignIn() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none transition-colors"
+              className="btn-primary w-full flex justify-center py-3 px-4"
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
@@ -149,9 +149,9 @@ export default function SignIn() {
         </form>
         
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-600">
             Don't have an account?{' '}
-            <Link href="/auth/register" className="text-purple-400 hover:text-purple-300">
+            <Link href="/auth/register" className="text-primary hover:text-primary-dark">
               Sign up
             </Link>
           </p>

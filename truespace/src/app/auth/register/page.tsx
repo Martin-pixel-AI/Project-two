@@ -1,32 +1,30 @@
 'use client';
 
 import { useState } from 'react';
+import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiLock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi';
-import axios from 'axios';
+import { FiUser, FiMail, FiLock, FiAlertCircle } from 'react-icons/fi';
 
 export default function Register() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !password) {
       setError('Please fill in all fields');
       return;
     }
     
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
     
@@ -34,46 +32,55 @@ export default function Register() {
       setLoading(true);
       setError('');
       
-      const response = await axios.post('/api/register', {
-        name,
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name,
+          email,
+          password,
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+      
+      await signIn('credentials', {
+        redirect: false,
         email,
         password,
       });
       
-      setSuccess('Registration successful! Redirecting to login...');
-      
-      // Redirect to login page after short delay
-      setTimeout(() => {
-        router.push('/auth/signin');
-      }, 2000);
+      router.push('/dashboard');
     } catch (error: any) {
-      if (error.response?.data?.error) {
-        setError(error.response.data.error);
-      } else {
-        setError('An error occurred during registration');
-      }
+      setError(error.message || 'Registration failed');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen pt-28 pb-20 flex items-center justify-center bg-[#121212]">
+    <div className="min-h-screen pt-28 pb-20 flex items-center justify-center bg-white">
       <motion.div 
-        className="w-full max-w-md p-8 bg-[#1c1c1c] rounded-lg shadow-lg border border-[#333333]"
+        className="w-full max-w-md p-8 bg-white rounded-lg shadow-md border border-gray-200"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.3 }}
       >
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Create Account</h1>
-          <p className="text-gray-400">
-            Join TrueSpace to access educational videos
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Account</h1>
+          <p className="text-gray-600">
+            Join TrueSpace and start learning today
           </p>
         </div>
         
         {error && (
           <motion.div 
-            className="mb-6 p-4 bg-red-500/10 border border-red-500/30 rounded-md flex items-center text-red-400"
+            className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md flex items-center text-red-600"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
@@ -83,21 +90,9 @@ export default function Register() {
           </motion.div>
         )}
         
-        {success && (
-          <motion.div 
-            className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-md flex items-center text-green-400"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <FiCheckCircle className="mr-2 flex-shrink-0" />
-            <span>{success}</span>
-          </motion.div>
-        )}
-        
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="name" className="block text-sm font-medium text-gray-700">
               Full Name
             </label>
             <div className="relative">
@@ -112,15 +107,15 @@ export default function Register() {
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="block w-full pl-10 px-4 py-3 bg-[#252525] border border-[#333333] focus:border-purple-500 rounded-md focus:outline-none text-white"
+                className="block w-full pl-10 px-4 py-3 bg-white border border-gray-300 focus:border-primary focus:ring-primary rounded-md focus:outline-none text-gray-900"
                 placeholder="John Doe"
               />
             </div>
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="email" className="block text-sm font-medium text-gray-300">
-              Email Address
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -134,14 +129,14 @@ export default function Register() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="block w-full pl-10 px-4 py-3 bg-[#252525] border border-[#333333] focus:border-purple-500 rounded-md focus:outline-none text-white"
+                className="block w-full pl-10 px-4 py-3 bg-white border border-gray-300 focus:border-primary focus:ring-primary rounded-md focus:outline-none text-gray-900"
                 placeholder="you@example.com"
               />
             </div>
           </div>
           
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-300">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
             <div className="relative">
@@ -152,61 +147,24 @@ export default function Register() {
                 id="password"
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="block w-full pl-10 px-4 py-3 bg-[#252525] border border-[#333333] focus:border-purple-500 rounded-md focus:outline-none text-white"
+                className="block w-full pl-10 px-4 py-3 bg-white border border-gray-300 focus:border-primary focus:ring-primary rounded-md focus:outline-none text-gray-900"
                 placeholder="••••••••"
               />
             </div>
-          </div>
-          
-          <div className="space-y-2">
-            <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-300">
-              Confirm Password
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <FiLock className="text-gray-500" />
-              </div>
-              <input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="block w-full pl-10 px-4 py-3 bg-[#252525] border border-[#333333] focus:border-purple-500 rounded-md focus:outline-none text-white"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-          
-          <div className="flex items-center">
-            <input
-              id="terms"
-              name="terms"
-              type="checkbox"
-              required
-              className="h-4 w-4 bg-[#252525] border-[#333333] focus:ring-purple-500 rounded text-purple-600"
-            />
-            <label htmlFor="terms" className="ml-2 block text-sm text-gray-400">
-              I agree to the{' '}
-              <Link href="/terms" className="text-purple-400 hover:text-purple-300">
-                Terms of Service
-              </Link>{' '}
-              and{' '}
-              <Link href="/privacy" className="text-purple-400 hover:text-purple-300">
-                Privacy Policy
-              </Link>
-            </label>
+            <p className="text-xs text-gray-500 mt-1">
+              Password must be at least 8 characters
+            </p>
           </div>
           
           <div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none transition-colors"
+              className="btn-primary w-full flex justify-center py-3 px-4"
             >
               {loading ? 'Creating account...' : 'Create account'}
             </button>
@@ -214,9 +172,9 @@ export default function Register() {
         </form>
         
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-600">
             Already have an account?{' '}
-            <Link href="/auth/signin" className="text-purple-400 hover:text-purple-300">
+            <Link href="/auth/signin" className="text-primary hover:text-primary-dark">
               Sign in
             </Link>
           </p>
