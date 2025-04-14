@@ -7,6 +7,24 @@ module.exports = {
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './src/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    'bg-white',
+    'text-gray-500',
+    'text-gray-600',
+    'text-gray-700',
+    'text-gray-900',
+    'bg-gray-50',
+    'bg-gray-100',
+    'bg-gray-200',
+    'hover:bg-gray-50',
+    'border',
+    'border-gray-200',
+    'border-gray-300',
+    'border-transparent',
+    'hover:border-primary',
+    'divide-y',
+    'divide-gray-200'
+  ],
   theme: {
     container: {
       center: true,
@@ -50,6 +68,18 @@ module.exports = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        gray: {
+          50: '#F9FAFB',
+          100: '#F3F4F6',
+          200: '#E5E7EB',
+          300: '#D1D5DB',
+          400: '#9CA3AF',
+          500: '#6B7280',
+          600: '#4B5563',
+          700: '#374151',
+          800: '#1F2937',
+          900: '#111827',
         },
       },
       borderRadius: {
