@@ -41,7 +41,7 @@ const promoCodeSchema = new Schema<IPromoCode>(
   { timestamps: true }
 );
 
-// Add index for faster lookups
-promoCodeSchema.index({ code: 1 });
+// Удаляем дублирующий индекс, так как поле code уже имеет unique: true
+// promoCodeSchema.index({ code: 1 });
 
 export const PromoCode = models.PromoCode || mongoose.model<IPromoCode>('PromoCode', promoCodeSchema); 
