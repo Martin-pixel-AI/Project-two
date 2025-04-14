@@ -5,14 +5,13 @@ import connectDB from '@/lib/db';
 import { Course } from '@/models/Course';
 import { Video } from '@/models/Video';
 import { UserCourseAccess } from '@/models/UserCourseAccess';
-import mongoose from 'mongoose';
 
 export async function GET(
-  req: NextRequest,
-  { params }: { params: { courseId: string } }
+  request: NextRequest,
+  context: { params: { courseId: string } }
 ) {
   try {
-    const { courseId } = params;
+    const { courseId } = context.params;
     
     if (!courseId) {
       return NextResponse.json(
