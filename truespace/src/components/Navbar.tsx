@@ -64,17 +64,17 @@ export default function Navbar() {
   return (
     <motion.header 
       className={`fixed w-full top-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-[#121212]/90 backdrop-blur-md shadow-md" : "bg-transparent"
+        isScrolled ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-sm" : "bg-transparent"
       }`}
       initial="hidden"
       animate="visible"
       variants={navVariants}
     >
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+      <div className="container mx-auto px-4 py-3 flex justify-between items-center">
         <Link href="/" onClick={closeMenu}>
           <div className="flex items-center">
-            <span className="text-xl font-bold text-white mr-1">True</span>
-            <span className="text-xl font-bold text-purple-500">Space</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white mr-1">True</span>
+            <span className="text-xl font-bold text-primary">Space</span>
           </div>
         </Link>
 
@@ -82,16 +82,16 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center space-x-8">
           <Link 
             href="/courses" 
-            className={`text-sm font-medium transition-colors hover:text-purple-400 ${
-              pathname === '/courses' ? 'text-purple-500' : 'text-white'
+            className={`text-sm font-medium transition-colors hover:text-primary ${
+              pathname === '/courses' ? 'text-primary' : 'text-gray-700 dark:text-gray-300'
             }`}
           >
             Courses
           </Link>
           <Link 
             href="/search" 
-            className={`text-sm font-medium transition-colors hover:text-purple-400 ${
-              pathname === '/search' ? 'text-purple-500' : 'text-white'
+            className={`text-sm font-medium transition-colors hover:text-primary ${
+              pathname === '/search' ? 'text-primary' : 'text-gray-700 dark:text-gray-300'
             }`}
           >
             <FiSearch className="inline mr-1" />
@@ -102,19 +102,19 @@ export default function Navbar() {
             <>
               <Link 
                 href="/dashboard"
-                className={`text-sm font-medium transition-colors hover:text-purple-400 ${
-                  pathname === '/dashboard' ? 'text-purple-500' : 'text-white'
+                className={`text-sm font-medium transition-colors hover:text-primary ${
+                  pathname === '/dashboard' ? 'text-primary' : 'text-gray-700 dark:text-gray-300'
                 }`}
               >
                 <FiBookmark className="inline mr-1" />
                 Dashboard
               </Link>
               <div className="relative group">
-                <button className="flex items-center text-sm font-medium">
+                <button className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300">
                   <span className="mr-2">
                     {session.user.name || 'User'}
                   </span>
-                  <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-primary-light dark:bg-primary-dark flex items-center justify-center">
                     {session.user.image ? (
                       <img
                         src={session.user.image}
@@ -122,21 +122,21 @@ export default function Navbar() {
                         className="rounded-full w-8 h-8 object-cover"
                       />
                     ) : (
-                      <FiUser className="text-white" />
+                      <FiUser className="text-primary-dark dark:text-primary-light" />
                     )}
                   </div>
                 </button>
-                <div className="absolute right-0 mt-2 w-48 bg-[#1c1c1c] rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 border border-gray-100 dark:border-gray-700">
                   <Link
                     href="/profile"
-                    className="block px-4 py-2 text-sm text-white hover:bg-[#333333]"
+                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <FiUser className="inline mr-2" />
                     Profile
                   </Link>
                   <button
                     onClick={() => signOut()}
-                    className="block w-full text-left px-4 py-2 text-sm text-white hover:bg-[#333333]"
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                   >
                     <FiLogOut className="inline mr-2" />
                     Sign Out
@@ -148,13 +148,13 @@ export default function Navbar() {
             <>
               <Link 
                 href="/auth/signin" 
-                className="text-sm font-medium text-white hover:text-purple-400 transition-colors"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary transition-colors"
               >
                 Sign In
               </Link>
               <Link 
                 href="/auth/register" 
-                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                className="bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
               >
                 Register
               </Link>
@@ -164,7 +164,7 @@ export default function Navbar() {
 
         {/* Mobile Menu Button */}
         <button 
-          className="md:hidden text-white focus:outline-none"
+          className="md:hidden text-gray-700 dark:text-gray-300 focus:outline-none"
           onClick={toggleMenu}
           aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
         >
@@ -174,7 +174,7 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       <motion.div
-        className="md:hidden fixed inset-0 bg-[#121212]/95 backdrop-blur-md z-40 pt-20"
+        className="md:hidden fixed inset-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md z-40 pt-20"
         initial="closed"
         animate={isMenuOpen ? "open" : "closed"}
         variants={menuVariants}
@@ -182,14 +182,14 @@ export default function Navbar() {
         <div className="container mx-auto px-4 py-4 flex flex-col space-y-6">
           <Link 
             href="/courses" 
-            className="text-lg font-medium hover:text-purple-400 transition-colors"
+            className="text-lg font-medium text-gray-900 dark:text-white hover:text-primary transition-colors"
             onClick={closeMenu}
           >
             Courses
           </Link>
           <Link 
             href="/search" 
-            className="text-lg font-medium hover:text-purple-400 transition-colors"
+            className="text-lg font-medium text-gray-900 dark:text-white hover:text-primary transition-colors"
             onClick={closeMenu}
           >
             <FiSearch className="inline mr-2" />

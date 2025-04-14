@@ -21,7 +21,7 @@ export default function Footer() {
 
   return (
     <motion.footer 
-      className="bg-[#121212] border-t border-[#333333] py-12"
+      className="bg-gray-50 dark:bg-gray-900/50 border-t border-gray-100 dark:border-gray-800 py-12"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
@@ -31,10 +31,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
             <div className="flex items-center">
-              <span className="text-xl font-bold text-white mr-1">True</span>
-              <span className="text-xl font-bold text-purple-500">Space</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-white mr-1">True</span>
+              <span className="text-xl font-bold text-primary">Space</span>
             </div>
-            <p className="text-[#6b7280] text-sm">
+            <p className="text-gray-600 dark:text-gray-400 text-sm">
               A modern educational platform for video courses with a beautiful, minimalist design.
             </p>
             <div className="flex space-x-4">
@@ -42,7 +42,7 @@ export default function Footer() {
                 href="https://github.com" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-[#6b7280] hover:text-white transition-colors"
+                className="text-gray-500 hover:text-primary transition-colors"
               >
                 <FiGithub size={20} />
               </a>
@@ -50,7 +50,7 @@ export default function Footer() {
                 href="https://twitter.com" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-[#6b7280] hover:text-white transition-colors"
+                className="text-gray-500 hover:text-primary transition-colors"
               >
                 <FiTwitter size={20} />
               </a>
@@ -58,7 +58,7 @@ export default function Footer() {
                 href="https://instagram.com" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-[#6b7280] hover:text-white transition-colors"
+                className="text-gray-500 hover:text-primary transition-colors"
               >
                 <FiInstagram size={20} />
               </a>
@@ -66,7 +66,7 @@ export default function Footer() {
                 href="https://linkedin.com" 
                 target="_blank" 
                 rel="noopener noreferrer"
-                className="text-[#6b7280] hover:text-white transition-colors"
+                className="text-gray-500 hover:text-primary transition-colors"
               >
                 <FiLinkedin size={20} />
               </a>
@@ -74,20 +74,20 @@ export default function Footer() {
           </div>
           
           <div>
-            <h3 className="text-white font-medium mb-4">Platform</h3>
+            <h3 className="text-gray-900 dark:text-white font-medium mb-4">Platform</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/courses" className="text-[#6b7280] hover:text-white transition-colors">
+                <Link href="/courses" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                   Courses
                 </Link>
               </li>
               <li>
-                <Link href="/search" className="text-[#6b7280] hover:text-white transition-colors">
+                <Link href="/search" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                   Search
                 </Link>
               </li>
               <li>
-                <Link href="/dashboard" className="text-[#6b7280] hover:text-white transition-colors">
+                <Link href="/dashboard" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                   Dashboard
                 </Link>
               </li>
@@ -95,20 +95,20 @@ export default function Footer() {
           </div>
           
           <div>
-            <h3 className="text-white font-medium mb-4">Account</h3>
+            <h3 className="text-gray-900 dark:text-white font-medium mb-4">Account</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/auth/signin" className="text-[#6b7280] hover:text-white transition-colors">
+                <Link href="/auth/signin" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                   Sign In
                 </Link>
               </li>
               <li>
-                <Link href="/auth/register" className="text-[#6b7280] hover:text-white transition-colors">
+                <Link href="/auth/register" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                   Register
                 </Link>
               </li>
               <li>
-                <Link href="/auth/forgot-password" className="text-[#6b7280] hover:text-white transition-colors">
+                <Link href="/auth/forgot-password" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                   Forgot Password
                 </Link>
               </li>
@@ -116,20 +116,20 @@ export default function Footer() {
           </div>
           
           <div>
-            <h3 className="text-white font-medium mb-4">Legal</h3>
+            <h3 className="text-gray-900 dark:text-white font-medium mb-4">Legal</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link href="/privacy" className="text-[#6b7280] hover:text-white transition-colors">
+                <Link href="/privacy" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/terms" className="text-[#6b7280] hover:text-white transition-colors">
+                <Link href="/terms" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                   Terms of Service
                 </Link>
               </li>
               <li>
-                <Link href="/cookies" className="text-[#6b7280] hover:text-white transition-colors">
+                <Link href="/cookies" className="text-gray-600 dark:text-gray-400 hover:text-primary dark:hover:text-primary-light transition-colors">
                   Cookie Policy
                 </Link>
               </li>
@@ -137,8 +137,8 @@ export default function Footer() {
           </div>
         </div>
         
-        <div className="mt-8 pt-8 border-t border-[#333333] text-center">
-          <p className="text-[#6b7280] text-sm">
+        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-800 text-center">
+          <p className="text-gray-500 dark:text-gray-400 text-sm">
             © {currentYear} TrueSpace. All rights reserved.
           </p>
         </div>
