@@ -1,126 +1,242 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import Link from 'next/link';
-import { FaArrowLeft, FaPlay, FaPause, FaExpand, FaCompress, FaVolumeUp, FaVolumeMute } from 'react-icons/fa';
+import { Play, Pause, Volume2, VolumeX, Maximize, ArrowLeft, Clock } from 'lucide-react';
+
+// Define YouTube API types
+declare global {
+  interface Window {
+    YT: YT;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
+
+// YouTube namespace declaration
+declare namespace YT {
+  class Player {
+    constructor(
+      elementId: string,
+      config: {
+        videoId: string;
+        playerVars?: {
+          autoplay?: number;
+          controls?: number;
+          disablekb?: number;
+          fs?: number;
+          rel?: number;
+          modestbranding?: number;
+          start?: number;
+        };
+        events?: {
+          onReady?: (event: { target: Player }) => void;
+          onStateChange?: (event: { data: number; target: Player }) => void;
+          onError?: (event: { data: number }) => void;
+        };
+      }
+    );
+    
+    playVideo(): void;
+    pauseVideo(): void;
+    mute(): void;
+    unMute(): void;
+    setVolume(volume: number): void;
+    getCurrentTime(): number;
+    getDuration(): number;
+    seekTo(seconds: number, allowSeekAhead?: boolean): void;
+    destroy(): void;
+  }
+  
+  const PlayerState: {
+    PLAYING: number;
+    PAUSED: number;
+    ENDED: number;
+  };
+}
 
 interface Video {
   _id: string;
   title: string;
-  description?: string;
+  description: string;
   videoUrl: string;
+  thumbnail: string;
+  duration: number;
+  isFree: boolean;
+  youtubeId?: string;
 }
 
 interface Course {
   _id: string;
   title: string;
-  videos: Video[];
+}
+
+interface VideoProgress {
+  videoId: string;
+  courseId: string;
+  currentTime: number;
+  duration: number;
+  completed: boolean;
 }
 
 export default function VideoPlayer({ params }: { params: { courseId: string; videoId: string } }) {
-  const { courseId, videoId } = params;
-  const router = useRouter();
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [video, setVideo] = useState<Video | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
+  const [hasAccess, setHasAccess] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [progress, setProgress] = useState<VideoProgress | null>(null);
   const [completed, setCompleted] = useState(false);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
-  const videoContainerRef = useRef<HTMLDivElement>(null);
-  
-  // Progress tracking
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
-  const lastSavedTime = useRef<number>(0);
-  
-  // Check access and fetch video data
+  const youtubePlayerRef = useRef<YT.Player | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const progressSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const progressUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load YouTube API
+  useEffect(() => {
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchVideoData = async () => {
       try {
-        // Check if user has access
-        const accessResponse = await fetch(`/api/user/courses/access?courseId=${courseId}`);
-        if (!accessResponse.ok) {
-          const { hasAccess, message } = await accessResponse.json();
-          if (!hasAccess) {
-            setError(message || 'You do not have access to this course');
-            setLoading(false);
-            return;
-          }
+        // Check authentication first
+        if (status === 'loading') return;
+        
+        // Fetch video data
+        const videoRes = await fetch(`/api/videos/${params.videoId}`);
+        if (!videoRes.ok) {
+          throw new Error('Failed to fetch video');
         }
         
-        // Fetch video details
-        const videoResponse = await fetch(`/api/courses/${courseId}/videos/${videoId}`);
-        if (!videoResponse.ok) {
-          throw new Error('Failed to fetch video details');
-        }
-        
-        const videoData = await videoResponse.json();
+        const videoData = await videoRes.json();
         setVideo(videoData);
         
-        // Fetch course details to get the list of videos
-        const courseResponse = await fetch(`/api/courses/${courseId}`);
-        if (!courseResponse.ok) {
-          throw new Error('Failed to fetch course details');
+        // Fetch course data
+        const courseRes = await fetch(`/api/courses/${params.courseId}`);
+        if (!courseRes.ok) {
+          throw new Error('Failed to fetch course');
         }
         
-        const courseData = await courseResponse.json();
+        const courseData = await courseRes.json();
         setCourse(courseData);
         
-        // Track video view
-        await fetch('/api/user/videos/view', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ videoId, courseId }),
-        });
-        
-        // Fetch video progress
-        const progressResponse = await fetch(`/api/user/videos/progress?videoId=${videoId}&courseId=${courseId}`);
-        if (progressResponse.ok) {
-          const progressData = await progressResponse.json();
-          
-          // Set video current time if available
-          if (progressData.currentTime && videoRef.current) {
-            videoRef.current.currentTime = progressData.currentTime;
-            lastSavedTime.current = progressData.currentTime;
+        // Check if user has access
+        if (session?.user) {
+          // Check if video is free or user has access to the course
+          if (videoData.isFree) {
+            setHasAccess(true);
+          } else {
+            const accessRes = await fetch(`/api/user/courses/check-access?courseId=${params.courseId}`);
+            if (accessRes.ok) {
+              const accessData = await accessRes.json();
+              setHasAccess(accessData.hasAccess);
+            }
           }
           
-          setCompleted(progressData.completed || false);
+          // Fetch video progress
+          const progressRes = await fetch(`/api/user/videos/progress?videoId=${params.videoId}&courseId=${params.courseId}`);
+          if (progressRes.ok) {
+            const progressData = await progressRes.json();
+            setProgress(progressData);
+            
+            // Set initial currentTime from saved progress
+            if (progressData && progressData.currentTime > 0) {
+              setCurrentTime(progressData.currentTime);
+            }
+          }
+        } else {
+          // Not logged in, check if the video is free
+          setHasAccess(videoData.isFree);
         }
-      } catch (err) {
-        console.error(err);
-        setError('Failed to load video');
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Failed to load video data');
       } finally {
         setLoading(false);
       }
     };
 
-    if (status !== 'loading') {
-      fetchVideoData();
-    }
+    fetchVideoData();
+  }, [params.videoId, params.courseId, session, status]);
+
+  // Initialize YouTube player when video data is loaded
+  useEffect(() => {
+    if (!video?.youtubeId || !window.YT || !window.YT.Player) return;
     
-    // Cleanup
+    const initYouTubePlayer = () => {
+      youtubePlayerRef.current = new YT.Player('youtube-player', {
+        videoId: video.youtubeId,
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          rel: 0,
+          modestbranding: 1,
+          start: Math.floor(currentTime)
+        },
+        events: {
+          onReady: (event) => {
+            event.target.setVolume(volume * 100);
+            if (muted) event.target.mute();
+            setDuration(event.target.getDuration());
+            fetchVideoProgress();
+          },
+          onStateChange: (event) => {
+            setPlaying(event.data === YT.PlayerState.PLAYING);
+            
+            if (event.data === YT.PlayerState.PLAYING) {
+              startProgressTracking();
+            } else if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+              stopProgressTracking();
+            }
+            
+            if (event.data === YT.PlayerState.ENDED) {
+              saveProgressToAPI(true);
+            }
+          },
+          onError: () => {
+            setError('Error loading YouTube video');
+          }
+        }
+      });
+    };
+
+    if (window.YT.Player) {
+      initYouTubePlayer();
+    } else {
+      window.onYouTubeIframeAPIReady = initYouTubePlayer;
+    }
+
     return () => {
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current);
+      if (youtubePlayerRef.current) {
+        youtubePlayerRef.current.destroy();
       }
     };
-  }, [courseId, videoId, status]);
+  }, [video?.youtubeId, currentTime, volume, muted]);
 
-  // Video player controls
+  // Set up event listeners for direct video playback
   useEffect(() => {
     const videoElement = videoRef.current;
-    if (!videoElement) return;
+    if (!videoElement || video?.youtubeId) return;
 
     const handleTimeUpdate = () => {
       setCurrentTime(videoElement.currentTime);
@@ -130,274 +246,435 @@ export default function VideoPlayer({ params }: { params: { courseId: string; vi
       setDuration(videoElement.duration);
     };
 
+    const handlePlay = () => {
+      setPlaying(true);
+      startProgressTracking();
+    };
+
+    const handlePause = () => {
+      setPlaying(false);
+      stopProgressTracking();
+    };
+
     const handleEnded = () => {
       setPlaying(false);
-      saveProgress(videoElement.duration, videoElement.duration, true);
-      setCompleted(true);
+      stopProgressTracking();
+      saveProgressToAPI(true);
     };
 
     videoElement.addEventListener('timeupdate', handleTimeUpdate);
     videoElement.addEventListener('durationchange', handleDurationChange);
+    videoElement.addEventListener('play', handlePlay);
+    videoElement.addEventListener('pause', handlePause);
     videoElement.addEventListener('ended', handleEnded);
+
+    // Set initial time from saved progress
+    if (progress && progress.currentTime > 0) {
+      videoElement.currentTime = progress.currentTime;
+    }
 
     return () => {
       videoElement.removeEventListener('timeupdate', handleTimeUpdate);
       videoElement.removeEventListener('durationchange', handleDurationChange);
+      videoElement.removeEventListener('play', handlePlay);
+      videoElement.removeEventListener('pause', handlePause);
       videoElement.removeEventListener('ended', handleEnded);
     };
-  }, [videoRef.current]);
-  
-  // Setup progress tracking
-  useEffect(() => {
-    // Only track progress if video is loaded and user is authenticated
-    if (videoRef.current && video && session?.user) {
-      // Save progress every 5 seconds if it's changed by more than 3 seconds
-      progressInterval.current = setInterval(() => {
-        if (videoRef.current && Math.abs(videoRef.current.currentTime - lastSavedTime.current) > 3) {
-          saveProgress(videoRef.current.currentTime, videoRef.current.duration);
-          lastSavedTime.current = videoRef.current.currentTime;
-        }
-      }, 5000);
-      
-      return () => {
-        clearInterval(progressInterval.current as NodeJS.Timeout);
-        
-        // Save progress on unmount
-        if (videoRef.current) {
-          saveProgress(videoRef.current.currentTime, videoRef.current.duration);
-        }
-      };
+  }, [video, progress]);
+
+  const startProgressTracking = () => {
+    // Clear any existing interval
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
     }
-  }, [video, session]);
-  
-  const saveProgress = async (currentTime: number, duration: number, completed = false) => {
-    if (!session?.user) return;
+
+    // Track progress every second
+    progressIntervalRef.current = setInterval(() => {
+      if (video?.youtubeId && youtubePlayerRef.current) {
+        const currentTime = youtubePlayerRef.current.getCurrentTime();
+        setCurrentTime(currentTime);
+      }
+      
+      // Save progress periodically (every 10 seconds)
+      if (currentTime % 10 < 1) {
+        saveProgressToAPI();
+      }
+    }, 1000);
+  };
+
+  const stopProgressTracking = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  };
+
+  const saveProgressToAPI = async (completed = false) => {
+    if (!session?.user || !video) return;
     
+    // Clear any pending save
+    if (progressSaveTimeoutRef.current) {
+      clearTimeout(progressSaveTimeoutRef.current);
+    }
+    
+    // Debounce the save operation
+    progressSaveTimeoutRef.current = setTimeout(async () => {
+      try {
+        // Check if video is at least 95% complete or explicitly marked as completed
+        const isCompleted = completed || (duration > 0 && currentTime / duration >= 0.95);
+        
+        // Save progress to API
+        await fetch('/api/user/videos/progress', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            videoId: video._id,
+            courseId: params.courseId,
+            currentTime,
+            duration,
+            completed: isCompleted
+          })
+        });
+        
+        // Update local progress state
+        setProgress({
+          videoId: video._id,
+          courseId: params.courseId,
+          currentTime,
+          duration,
+          completed: isCompleted
+        } as VideoProgress);
+      } catch (error) {
+        console.error('Error saving progress:', error);
+      }
+    }, 500);
+  };
+
+  const handlePlayPause = () => {
+    if (video?.youtubeId && youtubePlayerRef.current) {
+      if (playing) {
+        youtubePlayerRef.current.pauseVideo();
+      } else {
+        youtubePlayerRef.current.playVideo();
+      }
+    } else if (videoRef.current) {
+      if (playing) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+    }
+  };
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseFloat(e.target.value);
+    setVolume(newVolume);
+    
+    if (video?.youtubeId && youtubePlayerRef.current) {
+      youtubePlayerRef.current.setVolume(newVolume * 100);
+      if (newVolume === 0) {
+        youtubePlayerRef.current.mute();
+        setMuted(true);
+      } else if (muted) {
+        youtubePlayerRef.current.unMute();
+        setMuted(false);
+      }
+    } else if (videoRef.current) {
+      videoRef.current.volume = newVolume;
+      videoRef.current.muted = newVolume === 0;
+      setMuted(newVolume === 0);
+    }
+  };
+
+  const handleMuteToggle = () => {
+    const newMuted = !muted;
+    setMuted(newMuted);
+    
+    if (video?.youtubeId && youtubePlayerRef.current) {
+      if (newMuted) {
+        youtubePlayerRef.current.mute();
+      } else {
+        youtubePlayerRef.current.unMute();
+      }
+    } else if (videoRef.current) {
+      videoRef.current.muted = newMuted;
+    }
+  };
+
+  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const seekTime = parseFloat(e.target.value);
+    setCurrentTime(seekTime);
+    
+    if (video?.youtubeId && youtubePlayerRef.current) {
+      youtubePlayerRef.current.seekTo(seekTime, true);
+    } else if (videoRef.current) {
+      videoRef.current.currentTime = seekTime;
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (!containerRef.current) return;
+    
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      containerRef.current.requestFullscreen();
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Function to fetch video progress
+  const fetchVideoProgress = async () => {
     try {
-      await fetch('/api/user/videos/progress', {
+      // Explicitly cast to string to fix TypeScript error
+      const videoId = params.videoId as string;
+      const courseId = params.courseId as string;
+      
+      if (!videoId || !courseId) {
+        console.error('Missing videoId or courseId parameters');
+        return;
+      }
+      
+      const response = await fetch(`/api/user/videos/progress?videoId=${videoId}&courseId=${courseId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error fetching video progress:', errorData);
+        return;
+      }
+      
+      const progressData = await response.json();
+      
+      // Only set initial position if we have progress and the video hasn't been watched completely
+      if (progressData.currentTime > 0 && !progressData.completed) {
+        setCurrentTime(progressData.currentTime);
+        if (youtubePlayerRef.current && youtubePlayerRef.current.seekTo) {
+          youtubePlayerRef.current.seekTo(progressData.currentTime, true);
+        }
+      }
+      
+      setCompleted(progressData.completed || false);
+    } catch (error) {
+      console.error('Failed to fetch video progress:', error);
+    }
+  };
+  
+  // Function to save video progress
+  const saveVideoProgress = async (time: number, videoDuration: number, isCompleted: boolean = false) => {
+    try {
+      const response = await fetch('/api/user/videos/progress', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          videoId,
-          courseId,
-          currentTime,
-          duration,
-          completed: completed || (duration > 0 && currentTime / duration > 0.95)
+          videoId: params.videoId,
+          courseId: params.courseId,
+          currentTime: time,
+          duration: videoDuration,
+          completed: isCompleted
         }),
       });
       
-      // Update completed state if needed
-      if (completed || (duration > 0 && currentTime / duration > 0.95)) {
-        setCompleted(true);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error saving video progress:', errorData);
       }
     } catch (error) {
-      console.error('Error saving progress:', error);
+      console.error('Failed to save video progress:', error);
     }
   };
-
-  const togglePlay = () => {
-    if (!videoRef.current) return;
+  
+  // Function to handle progress updates with debounce
+  const handleProgressUpdate = (time: number) => {
+    setCurrentTime(time);
     
-    if (playing) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
+    // Clear any existing timeout
+    if (progressUpdateTimeoutRef.current) {
+      clearTimeout(progressUpdateTimeoutRef.current);
     }
     
-    setPlaying(!playing);
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!videoRef.current) return;
-    
-    const newTime = parseFloat(e.target.value);
-    videoRef.current.currentTime = newTime;
-    setCurrentTime(newTime);
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!videoRef.current) return;
-    
-    const newVolume = parseFloat(e.target.value);
-    videoRef.current.volume = newVolume;
-    setVolume(newVolume);
-    setIsMuted(newVolume === 0);
-  };
-
-  const toggleMute = () => {
-    if (!videoRef.current) return;
-    
-    const newMutedState = !isMuted;
-    videoRef.current.muted = newMutedState;
-    setIsMuted(newMutedState);
-  };
-
-  const toggleFullscreen = () => {
-    if (!videoContainerRef.current) return;
-    
-    if (!isFullscreen) {
-      if (videoContainerRef.current.requestFullscreen) {
-        videoContainerRef.current.requestFullscreen();
+    // Set a new timeout to save progress after 2 seconds of no updates
+    progressUpdateTimeoutRef.current = setTimeout(() => {
+      // Only save progress if we have duration and are not at the end
+      if (duration > 0 && time < duration - 1) {
+        saveVideoProgress(time, duration);
       }
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-    }
-    
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+    }, 2000);
   };
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="container max-w-6xl mx-auto py-8 px-4">
+        <div className="h-8 w-1/3 mb-4 bg-gray-200 animate-pulse rounded"></div>
+        <div className="aspect-video mb-4 bg-gray-200 animate-pulse rounded"></div>
+        <div className="h-8 w-1/4 mb-2 bg-gray-200 animate-pulse rounded"></div>
+        <div className="h-24 w-full mb-6 bg-gray-200 animate-pulse rounded"></div>
       </div>
     );
   }
 
-  if (error || !video) {
+  if (error || !video || !course) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error:</strong>
-          <span className="block sm:inline"> {error || 'Video not found'}</span>
+      <div className="container max-w-6xl mx-auto py-8 px-4">
+        <h1 className="text-2xl font-bold mb-4">Error</h1>
+        <p>{error || 'Video not found'}</p>
+        <button 
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
+          onClick={() => router.push(`/courses/${params.courseId}`)}
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Course
+        </button>
+      </div>
+    );
+  }
+
+  if (!hasAccess && !video.isFree) {
+    return (
+      <div className="container max-w-6xl mx-auto py-8 px-4">
+        <h1 className="text-2xl font-bold mb-4">{video.title}</h1>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-6 mb-6">
+          <h2 className="text-xl font-semibold text-amber-800 mb-2">Premium Content</h2>
+          <p className="text-amber-700 mb-4">
+            This video is part of the premium content for this course. Purchase the course to get access to all videos.
+          </p>
+          <button 
+            className="px-4 py-2 bg-amber-600 text-white rounded hover:bg-amber-700"
+            onClick={() => router.push(`/courses/${params.courseId}`)}
+          >
+            View Course Details
+          </button>
         </div>
-        <div className="mt-4">
-          <Link href={`/courses/${courseId}`} className="text-primary hover:underline flex items-center">
-            <FaArrowLeft className="mr-2" /> Back to Course
-          </Link>
-        </div>
+        
+        <h2 className="text-xl font-semibold mb-3">Video Description</h2>
+        <p className="text-gray-700 dark:text-gray-300">{video.description}</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-4">
-        <Link href={`/courses/${courseId}`} className="text-primary hover:underline flex items-center">
-          <FaArrowLeft className="mr-2" /> Back to Course
-        </Link>
+    <div className="container max-w-6xl mx-auto py-8 px-4">
+      <div className="flex items-center mb-4 space-x-2">
+        <button 
+          className="p-1 hover:bg-gray-200 rounded-full"
+          onClick={() => router.push(`/courses/${params.courseId}`)}
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <h1 className="text-2xl font-bold">{video.title}</h1>
       </div>
       
-      <h1 className="text-2xl font-bold mb-4">{video.title}</h1>
-      
-      {/* Progress indicator */}
-      {completed && (
-        <div className="mb-2 text-green-600 font-medium flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-          <span>Completed</span>
-        </div>
-      )}
-      
-      {/* Video Player */}
-      <div className="bg-black rounded-lg overflow-hidden mb-8" ref={videoContainerRef}>
-        <div className="relative">
+      <div 
+        ref={containerRef}
+        className="relative aspect-video bg-black rounded-lg overflow-hidden mb-6"
+      >
+        {video.youtubeId ? (
+          <div id="youtube-player" className="w-full h-full"></div>
+        ) : (
           <video
             ref={videoRef}
             src={video.videoUrl}
-            className="w-full aspect-video"
-            onClick={togglePlay}
+            poster={video.thumbnail}
+            className="w-full h-full"
+            playsInline
           />
+        )}
+        
+        {/* Video Controls */}
+        <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-4">
+          <div className="flex items-center mb-2">
+            <button 
+              onClick={handlePlayPause}
+              className="mr-4 p-1 hover:bg-white hover:bg-opacity-20 rounded-full"
+            >
+              {playing ? (
+                <Pause className="w-6 h-6" />
+              ) : (
+                <Play className="w-6 h-6" />
+              )}
+            </button>
+            
+            <input 
+              type="range" 
+              min="0" 
+              max={duration || 100}
+              value={currentTime}
+              onChange={handleSeek}
+              className="flex-grow h-2 bg-gray-600 rounded-full appearance-none"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(currentTime / (duration || 1)) * 100}%, #4b5563 ${(currentTime / (duration || 1)) * 100}%, #4b5563 100%)`
+              }}
+            />
+            
+            <span className="ml-4 text-sm">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+          </div>
           
-          {/* Video Controls */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-            {/* Progress Bar */}
-            <div className="flex items-center mb-2">
-              <input
-                type="range"
-                min="0"
-                max={duration || 100}
-                value={currentTime}
-                onChange={handleSeek}
-                className="w-full h-1 bg-gray-400 rounded-full appearance-none cursor-pointer"
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <button 
+                onClick={handleMuteToggle}
+                className="mr-2 p-1 hover:bg-white hover:bg-opacity-20 rounded-full"
+              >
+                {muted ? (
+                  <VolumeX className="w-5 h-5" />
+                ) : (
+                  <Volume2 className="w-5 h-5" />
+                )}
+              </button>
+              
+              <input 
+                type="range" 
+                min="0" 
+                max="1" 
+                step="0.01"
+                value={volume}
+                onChange={handleVolumeChange}
+                className="w-24 h-2 bg-gray-600 rounded-full appearance-none"
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${volume * 100}%, #4b5563 ${volume * 100}%, #4b5563 100%)`
+                }}
               />
             </div>
             
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <button onClick={togglePlay} className="text-white">
-                  {playing ? <FaPause /> : <FaPlay />}
-                </button>
-                
-                <div className="flex items-center space-x-2">
-                  <button onClick={toggleMute} className="text-white">
-                    {isMuted ? <FaVolumeMute /> : <FaVolumeUp />}
-                  </button>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={volume}
-                    onChange={handleVolumeChange}
-                    className="w-16 h-1 bg-gray-400 rounded-full appearance-none cursor-pointer"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <span className="text-white text-sm">
-                  {formatTime(currentTime)} / {formatTime(duration)}
-                </span>
-                <button onClick={toggleFullscreen} className="text-white">
-                  {isFullscreen ? <FaCompress /> : <FaExpand />}
-                </button>
-              </div>
-            </div>
+            <button 
+              onClick={handleFullscreen}
+              className="p-1 hover:bg-white hover:bg-opacity-20 rounded-full"
+            >
+              <Maximize className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
       
-      {/* Video Description */}
-      {video.description && (
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">Description</h2>
-          <p className="text-gray-700">{video.description}</p>
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold mb-2">Course: {course.title}</h2>
+        <div className="flex items-center text-sm text-gray-600">
+          <span>{formatTime(duration)} • </span>
+          {progress?.completed ? (
+            <span className="ml-2 text-green-600">Completed</span>
+          ) : (
+            progress && (
+              <span className="ml-2">
+                Progress: {Math.round((currentTime / duration) * 100)}%
+              </span>
+            )
+          )}
         </div>
-      )}
+      </div>
       
-      {/* Other Videos in Course */}
-      {course && (
-        <div className="mt-8">
-          <h2 className="text-xl font-semibold mb-4">More from this course</h2>
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <ul className="divide-y divide-gray-200">
-              {course.videos.map((v) => (
-                <li 
-                  key={v._id} 
-                  className={`p-4 hover:bg-gray-50 ${v._id === videoId ? 'bg-gray-50' : ''}`}
-                >
-                  <Link href={`/courses/${courseId}/videos/${v._id}`} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      {v._id === videoId ? (
-                        <span className="w-8 h-8 flex items-center justify-center bg-primary text-white rounded-full mr-4">
-                          <FaPlay size={10} />
-                        </span>
-                      ) : (
-                        <span className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-full mr-4">
-                          <FaPlay size={10} />
-                        </span>
-                      )}
-                      <span className={v._id === videoId ? 'font-medium' : ''}>{v.title}</span>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
+      <div>
+        <h2 className="text-xl font-semibold mb-3">Description</h2>
+        <p className="text-gray-700 dark:text-gray-300">{video.description}</p>
+      </div>
     </div>
   );
 } 

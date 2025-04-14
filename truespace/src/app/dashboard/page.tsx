@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FiPlay, FiBookmark, FiClock, FiSearch } from 'react-icons/fi';
 import axios from 'axios';
+import ContinueWatching from '@/components/ContinueWatching';
 
 interface Course {
   _id: string;
@@ -141,6 +142,10 @@ export default function Dashboard() {
               <p className="mt-2 text-green-400 text-sm">{codeSuccess}</p>
             )}
           </div>
+        </div>
+        
+        <div className="mb-12">
+          <ContinueWatching />
         </div>
         
         <div className="mb-8">

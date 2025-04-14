@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId, Document } from 'mongodb';
+import { ObjectId } from 'mongodb';
 
 // Define interface for video progress records
 interface VideoProgress {
@@ -10,9 +10,10 @@ interface VideoProgress {
   userId: ObjectId;
   videoId: ObjectId;
   courseId: ObjectId;
-  progress: number;
+  currentTime: number;
+  duration: number;
   completed: boolean;
-  updatedAt: Date;
+  lastUpdated: Date;
 }
 
 // GET handler to retrieve video progress
@@ -133,8 +134,8 @@ export async function POST(request: NextRequest) {
         const completedVideoIds = allProgressRecords.map((record) => 
           record.videoId.toString()
         );
-        const allVideosCompleted = course.videos.every((vid: string | ObjectId) => 
-          completedVideoIds.includes(vid.toString())
+        const allVideosCompleted = course.videos.every((vid: any) => 
+          completedVideoIds.includes(vid._id.toString())
         );
 
         if (allVideosCompleted) {
@@ -155,7 +156,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      currentTime,
+      duration,
+      completed
+    });
   } catch (error) {
     console.error('Error updating video progress:', error);
     return NextResponse.json(

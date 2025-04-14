@@ -19,6 +19,7 @@ export async function connectToDatabase() {
   // Cache the connection
   cachedClient = client;
   cachedDb = db;
-
+  
+  console.log('MongoDB client connected successfully');
   return { client, db };
 } 
