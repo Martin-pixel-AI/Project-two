@@ -3,17 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FiArrowRight, FiSearch } from 'react-icons/fi';
+import { FiArrowRight, FiSearch, FiPlay, FiUsers, FiAward } from 'react-icons/fi';
 import Image from 'next/image';
 
 // Категории курсов для фильтрации
 const categories = [
-  { id: 'all', name: 'Все курсы' },
-  { id: 'programming', name: 'Программирование' },
-  { id: 'design', name: 'Дизайн' },
-  { id: 'business', name: 'Бизнес' },
-  { id: 'music', name: 'Музыка' },
-  { id: 'photography', name: 'Фотография' },
+  { id: 'all', name: 'Все курсы', icon: FiPlay },
+  { id: 'programming', name: 'Программирование', icon: FiPlay },
+  { id: 'design', name: 'Дизайн', icon: FiPlay },
+  { id: 'business', name: 'Бизнес', icon: FiPlay },
+  { id: 'music', name: 'Музыка', icon: FiPlay },
+  { id: 'photography', name: 'Фотография', icon: FiPlay },
 ];
 
 export default function Home() {
@@ -22,12 +22,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Минималистичный стиль Feather */}
-      <section className="py-24 md:py-32 bg-[#f8f9fa]">
-        <div className="container mx-auto px-4 max-w-5xl">
+      {/* Hero Section */}
+      <section className="relative py-32 overflow-hidden">
+        <div className="absolute inset-0 gradient-bg"></div>
+        <div className="container mx-auto px-4 max-w-6xl relative">
           <div className="text-center">
             <motion.h1 
-              className="text-5xl md:text-6xl lg:text-7xl font-bold mb-8 text-gray-900 leading-tight"
+              className="text-5xl md:text-7xl font-bold mb-8 gradient-text"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
@@ -51,13 +52,13 @@ export default function Home() {
             >
               <Link
                 href="/courses"
-                className="btn-primary py-3 px-8 text-base font-medium rounded-md"
+                className="btn-primary"
               >
                 Найти курсы
               </Link>
               <Link
                 href="/auth/register"
-                className="btn-outline py-3 px-8 text-base font-medium rounded-md"
+                className="btn-outline"
               >
                 Начать бесплатно
               </Link>
@@ -67,31 +68,30 @@ export default function Home() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="flex justify-center"
+              className="flex justify-center gap-8 mb-12"
             >
-              <div className="flex items-center justify-center flex-wrap gap-4">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="w-10 h-10 rounded-full bg-gray-200" />
-                ))}
+              <div className="text-center">
+                <div className="text-4xl font-bold gradient-text mb-2">50K+</div>
+                <div className="text-gray-600">Студентов</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold gradient-text mb-2">100+</div>
+                <div className="text-gray-600">Курсов</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold gradient-text mb-2">4.8</div>
+                <div className="text-gray-600">Рейтинг</div>
               </div>
             </motion.div>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
-              className="text-gray-500 mt-4"
-            >
-              Присоединяйтесь к 50,000+ студентов и начните обучение сегодня
-            </motion.p>
           </div>
         </div>
       </section>
 
       {/* Featured Courses Section */}
       <section className="py-20 bg-white">
-        <div className="container mx-auto px-4 max-w-5xl">
+        <div className="container mx-auto px-4 max-w-6xl">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Популярные курсы</h2>
+            <h2 className="text-4xl font-bold mb-4 gradient-text">Популярные курсы</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
               Выберите из нашей коллекции тщательно подобранных курсов,
               созданных лучшими экспертами
@@ -99,18 +99,19 @@ export default function Home() {
           </div>
           
           {/* Category Filters */}
-          <div className="mb-10 overflow-x-auto pb-2">
-            <div className="flex justify-center space-x-2 min-w-max">
+          <div className="mb-10 overflow-x-auto">
+            <div className="flex justify-center gap-2 min-w-max">
               {categories.map(category => (
                 <button
                   key={category.id}
                   onClick={() => setActiveCategory(category.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
                     activeCategory === category.id
-                      ? 'bg-primary text-white'
+                      ? 'bg-primary text-white shadow-lg shadow-primary/25'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
+                  <category.icon className="w-4 h-4" />
                   {category.name}
                 </button>
               ))}
@@ -118,35 +119,46 @@ export default function Home() {
           </div>
           
           {/* Search Bar */}
-          <div className="mb-10 max-w-md mx-auto">
+          <div className="mb-12 max-w-xl mx-auto">
             <div className="relative">
               <input
                 type="text"
                 placeholder="Поиск курсов..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-3 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent shadow-sm"
+                className="w-full px-6 py-4 pl-12 rounded-full shadow-lg shadow-gray-100/50 border-none focus:ring-2 focus:ring-primary/30"
               />
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             </div>
           </div>
           
-          {/* Placeholder для курсов (минималистичный) */}
+          {/* Course Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {Array.from({ length: 3 }).map((_, i) => (
               <motion.div
                 key={i}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden transition-all hover:shadow-md"
+                className="course-card group"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: i * 0.1 }}
               >
-                <div className="h-40 bg-gray-100"></div>
-                <div className="p-6">
-                  <div className="text-sm text-primary font-medium mb-2">Категория</div>
-                  <h3 className="text-xl font-semibold mb-2">Название курса</h3>
-                  <p className="text-gray-600 mb-4">Краткое описание курса. Изучите основы и станьте профессионалом.</p>
-                  <Link href="/courses/1" className="text-primary font-medium flex items-center">
+                <div className="relative h-48 bg-gray-100">
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                </div>
+                <div className="p-8">
+                  <div className="inline-block px-3 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4">
+                    Категория
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3 group-hover:text-primary transition-colors">
+                    Название курса
+                  </h3>
+                  <p className="text-gray-600 mb-6">
+                    Краткое описание курса. Изучите основы и станьте профессионалом.
+                  </p>
+                  <Link 
+                    href="/courses/1" 
+                    className="inline-flex items-center text-primary font-medium group-hover:gap-3 transition-all"
+                  >
                     Подробнее <FiArrowRight className="ml-2" />
                   </Link>
                 </div>
@@ -157,7 +169,7 @@ export default function Home() {
           <div className="mt-12 text-center">
             <Link
               href="/courses"
-              className="inline-flex items-center text-primary hover:underline font-medium"
+              className="inline-flex items-center text-primary hover:gap-3 transition-all font-medium"
             >
               Смотреть все курсы <FiArrowRight className="ml-2" />
             </Link>
@@ -166,19 +178,22 @@ export default function Home() {
       </section>
       
       {/* CTA Section */}
-      <section className="py-20 bg-[#f8f9fa]">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="bg-white p-12 rounded-2xl shadow-sm border border-gray-100 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Готовы начать обучение?</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
-              Присоединяйтесь к нашему сообществу и начните свой путь к новым знаниям
-            </p>
-            <Link
-              href="/auth/register"
-              className="btn-primary py-3 px-8 text-base font-medium rounded-md inline-block"
-            >
-              Начать бесплатно
-            </Link>
+      <section className="py-20">
+        <div className="container mx-auto px-4 max-w-6xl">
+          <div className="glass p-12 rounded-[2rem] text-center relative overflow-hidden">
+            <div className="absolute inset-0 gradient-bg opacity-30"></div>
+            <div className="relative">
+              <h2 className="text-4xl font-bold mb-4 gradient-text">Готовы начать обучение?</h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+                Присоединяйтесь к нашему сообществу и начните свой путь к новым знаниям
+              </p>
+              <Link
+                href="/auth/register"
+                className="btn-primary inline-block"
+              >
+                Начать бесплатно
+              </Link>
+            </div>
           </div>
         </div>
       </section>
